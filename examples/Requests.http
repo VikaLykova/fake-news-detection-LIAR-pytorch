@@ -1,0 +1,13 @@
+POST http://localhost:8000/analyze
+Content-Type: application/json
+
+{ "news_text": "Мер міста оголосив про безкоштовний проїзд у метро до кінця року" }
+
+###
+GET http://localhost:8000/history
+
+###
+POST http://localhost:8000/train
+Content-Type: application/json
+
+{ "dataset_path": "data/ua_news.csv", "epochs": 2 }
