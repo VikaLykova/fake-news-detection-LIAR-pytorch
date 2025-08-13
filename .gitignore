@@ -1,3 +1,6 @@
-# user-defined
-all_models/*
-best_models/*
+__pycache__/
+*.pyc
+
+artifacts/history.db
+
+data/
