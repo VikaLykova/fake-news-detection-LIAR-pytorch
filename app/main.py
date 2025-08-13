@@ -1,62 +1,52 @@
-from fastapi import FastAPI, HTTPException
+# app/main.py
+from fastapi import FastAPI
 from app.schemas import AnalyzeRequest, AnalyzeResponse, TrainRequest
-from app.store import init_db, SessionLocal, History
-import os, random
-
-from app.infer import Detector, LABELS
+from app.store import SessionLocal, History, init_db
+import random
 
 app = FastAPI(title="City Fake News Detector (UA)")
-init_db()
 
-_detector = None
+LABELS = ["true", "mostly-true", "half-true", "barely-true", "false", "pants-fire"]
 
-def get_detector():
-    global _detector
-    if _detector is not None:
-        return _detector
-    if not os.path.isdir("models") or not any(p.endswith(".pth.tar") for p in os.listdir("models")):
-        return None  # демо-режим, если нет весов
-    det = Detector(labels=LABELS)
-    det.load()  # возьмет самый новый чекпоинт из ./models
-    _detector = det
-    return _detector
+@app.on_event("startup")
+def _startup():
+    init_db()
 
-def predict_label(text: str):
-    try:
-        det = get_detector()
-        if det is None:
-            raise RuntimeError("no weights")  # перейдём в демо-режим
-        label, conf = det.predict(text)       # тут может упасть, если вход не того формата
-        return label, round(conf, 4), "Результат получен обученной моделью."
-    except Exception as e:
-        # безопасный фоллбэк, чтобы не было 500
-        import random
-        label = random.choice(LABELS)
-        conf = round(1.0/len(LABELS), 4)
-        return label, conf, f"Демо-режим (fallback): {e}"
-
+def demo_predict(text: str):
+    label = random.choice(LABELS)
+    conf = round(random.uniform(0.05, 0.35), 3)
+    explanation = "Демо‑API: модель будет подключена после обучения."
+    return label, conf, explanation
 
 @app.post("/analyze", response_model=AnalyzeResponse)
 def analyze(req: AnalyzeRequest):
-    label, conf, explanation = predict_label(req.news_text)
+    label, conf, explanation = demo_predict(req.news_text)
     db = SessionLocal()
-    db.add(History(text=req.news_text, label=label, confidence=conf))
-    db.commit()
+    try:
+        db.add(History(text=req.news_text, label=label, confidence=conf))
+        db.commit()
+    finally:
+        db.close()
     return AnalyzeResponse(label=label, confidence=conf, explanation=explanation)
 
 @app.get("/history")
 def history(limit: int = 20):
     db = SessionLocal()
-    rows = db.query(History).order_by(History.id.desc()).limit(limit).all()
-    return [{"id":r.id, "text":r.text, "label":r.label, "confidence":r.confidence} for r in rows]
+    try:
+        rows = (
+            db.query(History)
+              .order_by(History.id.desc())
+              .limit(limit)
+              .all()
+        )
+        return [
+            {"id": r.id, "text": r.text, "label": r.label, "confidence": r.confidence}
+            for r in rows
+        ]
+    finally:
+        db.close()
 
 @app.post("/train")
-def train(req: TrainRequest):
-    if not os.path.exists(req.dataset_path):
-        raise HTTPException(status_code=400, detail="dataset_path not found")
-    code = os.system("python train.py")
-    if code != 0:
-        raise HTTPException(status_code=500, detail="training failed")
-    global _detector
-    _detector = None
-    return {"ok": True, "message": "Training finished. Weights in ./models/*.pth.tar"}
+def train(_: TrainRequest):
+    # заглушка — обучение подключим позже
+    return {"ok": True, "message": "Training (demo) finished"}

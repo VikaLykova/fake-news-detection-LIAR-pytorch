@@ -4,3 +4,4 @@ pydantic==2.8.2
 SQLAlchemy==2.0.32
 
 numpy>=2.1,<2.4
+requests>=2.31.0

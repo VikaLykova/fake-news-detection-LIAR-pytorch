@@ -1,25 +1,17 @@
-import torch
-from fake_news_detection.model import FakeNewsDetector
-from fake_news_detection.utils import preprocess_text
+import sys
+import requests
 
-MODEL_PATH = "models/model.pth.tar"
+URL = "http://127.0.0.1:8000/analyze"
 
-def load_model():
-    model = FakeNewsDetector()
-    checkpoint = torch.load(MODEL_PATH, map_location=torch.device('cpu'))
-    model.load_state_dict(checkpoint['state_dict'])
-    model.eval()
-    return model
 
-def predict(text):
-    model = load_model()
-    processed_text = preprocess_text(text)
-    with torch.no_grad():
-        output = model(processed_text)
-        _, predicted = torch.max(output, 1)
-    return predicted.item()
+def main():
+    text = " ".join(sys.argv[1:]) or "Мер міста оголосив про безкоштовний проїзд у метро до кінця року"
+    resp = requests.post(URL, json={"news_text": text})
+    print("Status:", resp.status_code)
+    try:
+        print(resp.json())
+    except Exception:
+        print(resp.text)
 
 if __name__ == "__main__":
-    sample_news = "Мер міста оголосив про безкоштовний проїзд у метро до кінця року"
-    label = predict(sample_news)
-    print(f"Predicted label: {label}")
+    main()

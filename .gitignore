@@ -3,4 +3,4 @@ __pycache__/
 
 artifacts/history.db
 
-data/
+data/scripts/
