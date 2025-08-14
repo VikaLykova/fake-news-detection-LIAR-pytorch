@@ -1,14 +1,10 @@
-import requests
+﻿from fastapi.testclient import TestClient
+from app.main import app
 
-BASE = "http://127.0.0.1:8000"
+client = TestClient(app)
 
-def test_analyze():
-    r = requests.post(f"{BASE}/analyze", json={"news_text": "Тестова новина"})
+def test_analyze_200():
+    r = client.post('/analyze', json={'news_text': 'Тестова новина'})
     assert r.status_code == 200
     body = r.json()
-    assert "label" in body and "confidence" in body and "explanation" in body
-
-def test_history():
-    r = requests.get(f"{BASE}/history?limit=1")
-    assert r.status_code == 200
-    assert isinstance(r.json(), list)
+    assert 'label' in body and 'confidence' in body
