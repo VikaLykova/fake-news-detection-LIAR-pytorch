@@ -4,3 +4,8 @@ __pycache__/
 artifacts/history.db
 
 data/scripts/
+__pycache__/
+*.pyc
+artifacts/*.db
+models/*.pth*
+.env
